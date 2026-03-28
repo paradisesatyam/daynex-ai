@@ -27,3 +27,17 @@ app.include_router(ai_chat.router,  prefix="/api/ai",    tags=["AI"])
 @app.get("/")
 def root():
     return {"message": "Daynex API is running ⚡"}
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "https://daynex-ai.vercel.app",
+        "https://*.vercel.app",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
