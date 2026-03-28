@@ -41,7 +41,7 @@ Give concise, actionable, friendly advice. Use their real task data when relevan
 Keep responses under 150 words unless a detailed plan is asked for."""
 
     response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system",  "content": system_prompt},
             {"role": "user",    "content": body.get("message", "")},
@@ -80,7 +80,7 @@ Return a JSON array with this exact structure (no markdown, raw JSON only):
 Return 3-4 phases. Tasks should be specific and actionable."""
 
     response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=800,
     )
