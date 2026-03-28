@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from groq import Groq
+from datetime import datetime
 import os
 
 from database import get_db
@@ -18,27 +19,49 @@ async def chat(
     db:   Session = Depends(get_db),
     user           = Depends(get_current_user),
 ):
-    # Pull user's tasks as context
     tasks = (
         db.query(Task)
         .filter(Task.user_id == user.id)
         .order_by(Task.created.desc())
-        .limit(20)
+        .limit(30)
         .all()
     )
-    task_lines = "\n".join([
-        f"- {t.name} | {t.priority} priority | "
-        f"{'done' if t.done else 'pending'} | {t.category}"
-        for t in tasks
-    ]) or "No tasks yet."
 
-    system_prompt = f"""You are Daynex, a smart personal productivity AI assistant.
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    done_tasks    = [t for t in tasks if t.done]
+    pending_tasks = [t for t in tasks if not t.done]
+    today_tasks   = [t for t in tasks if t.deadline == today]
+
+    def fmt(t):
+        return f"• {t.name} [{t.priority} priority, {t.category}, {t.duration}min, deadline: {t.deadline or 'none'}]"
+
+    task_context = f"""
+TODAY ({today}):
+{chr(10).join(fmt(t) for t in today_tasks) or "No tasks scheduled for today"}
+
+PENDING TASKS ({len(pending_tasks)} total):
+{chr(10).join(fmt(t) for t in pending_tasks[:10]) or "No pending tasks"}
+
+COMPLETED ({len(done_tasks)} total):
+{chr(10).join(fmt(t) for t in done_tasks[:5]) or "No completed tasks yet"}
+"""
+
+    system_prompt = f"""You are Daynex, a sharp and friendly AI productivity coach built into the Daynex app.
 The user's name is {user.name}.
-Their current tasks:
-{task_lines}
 
-Give concise, actionable, friendly advice. Use their real task data when relevant.
-Keep responses under 150 words unless a detailed plan is asked for."""
+Here is their REAL task data:
+{task_context}
+
+Your response rules:
+- Always use their REAL task names and data — never make up tasks
+- Be concise and direct — 2-4 sentences for simple questions
+- For plans or schedules, use clear bullet points with specific times
+- Be encouraging but honest — tell them if they have too much on their plate
+- If asked what to focus on, rank tasks by deadline + priority
+- Never say "I don't have access to your tasks" — you have the full list above
+- Keep responses under 200 words unless a detailed plan is explicitly asked for
+- Use the user's name occasionally to make it personal"""
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -46,7 +69,8 @@ Keep responses under 150 words unless a detailed plan is asked for."""
             {"role": "system",  "content": system_prompt},
             {"role": "user",    "content": body.get("message", "")},
         ],
-        max_tokens=400,
+        max_tokens=600,
+        temperature=0.7,
     )
     return {"reply": response.choices[0].message.content}
 
@@ -61,27 +85,34 @@ async def generate_plan(
     timeline = body.get("timeline", "2 weeks")
     hours    = body.get("hours", "2-4 hrs")
 
-    prompt = f"""Create a practical week-by-week productivity plan.
+    prompt = f"""Create a practical, detailed productivity plan for {user.name}.
 
 Goal: {goal}
 Timeline: {timeline}
 Daily hours available: {hours}
+Today's date: {datetime.now().strftime("%Y-%m-%d")}
 
-Return a JSON array with this exact structure (no markdown, raw JSON only):
-[
-  {{
-    "phase": "Week 1, Mon-Wed",
-    "title": "Phase title",
-    "tasks": ["task 1", "task 2", "task 3"],
-    "tip": "One key insight for this phase"
-  }}
-]
+Format your response exactly like this for each phase:
 
-Return 3-4 phases. Tasks should be specific and actionable."""
+PHASE 1 — [Week/Days range]: [Phase Title]
+Tasks:
+• [Specific task 1] (~X hours)
+• [Specific task 2] (~X hours)  
+• [Specific task 3] (~X hours)
+Tip: [One powerful insight for this phase]
+
+---
+
+PHASE 2 — [Week/Days range]: [Phase Title]
+...and so on
+
+Make tasks specific and actionable. Include time estimates.
+Give 3-4 phases total. End with a motivational one-liner."""
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=800,
+        max_tokens=1000,
+        temperature=0.7,
     )
     return {"plan": response.choices[0].message.content}
