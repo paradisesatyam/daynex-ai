@@ -9,6 +9,7 @@ from routes import auth, tasks, ai_chat
 Base.metadata.create_all(bind=engine)
  
 app = FastAPI(title="Daynex API", version="1.0.0")
+app = FastAPI(title="Daynex API", version="1.0.0", redirect_slashes=False)
  
 app.add_middleware(
     CORSMiddleware,

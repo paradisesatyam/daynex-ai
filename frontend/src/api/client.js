@@ -25,13 +25,13 @@ api.interceptors.response.use(
   }
 )
 
-export const getTasks     = ()         => api.get('/tasks')
-export const createTask   = (data)     => api.post('/tasks', data)
-export const updateTask   = (id, data) => api.put(`/tasks/${id}`, data)
-export const deleteTask   = (id)       => api.delete(`/tasks/${id}`)
-export const toggleDone   = (id)       => api.patch(`/tasks/${id}/done`)
-export const setActive    = (id)       => api.patch(`/tasks/${id}/active`)
-export const askAI        = (msg)      => api.post('/ai/chat', { message: msg })
-export const generatePlan = (data)     => api.post('/ai/plan', data)
+export const getTasks     = ()         => api.get('/tasks/')
+export const createTask   = (data)     => api.post('/tasks/', data)
+export const updateTask   = (id, data) => api.put(`/tasks/${id}/`, data)
+export const deleteTask   = (id)       => api.delete(`/tasks/${id}/`)
+export const toggleDone   = (id)       => api.patch(`/tasks/${id}/done/`)
+export const setActive    = (id)       => api.patch(`/tasks/${id}/active/`)
+export const askAI        = (msg)      => api.post('/ai/chat/', { message: msg })
+export const generatePlan = (data)     => api.post('/ai/plan/', data)
 
 export default api
