@@ -15,8 +15,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://daynex-ai.vercel.app",
-        "https://daynex-ai-5byo.vercel.app",
-        "https://daynex-ai-afgi.vercel.app",
+        "https://daynex-ai-mreozq416-paradisesatyams-projects.vercel.app",
         "https://*.vercel.app",
     ],
     allow_credentials=True,
